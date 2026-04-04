@@ -1,0 +1,29 @@
+rules:
+
+  - name: Images
+    priority: 1
+    condition:
+      extension: [".jpg", ".jpeg", ".png", ".gif"]
+    action:
+      move_to: "Organized/Media/Images"
+
+  - name: PDFs
+    priority: 2
+    condition:
+      extension: ".pdf"
+    action:
+      move_to: "Organized/Documents/PDF"
+
+  - name: CSV
+    priority: 3
+    condition:
+      extension: ".csv"
+    action:
+      move_to: "Organized/Data/CSV"
+
+  - name: Python
+    priority: 4
+    condition:
+      extension: ".py"
+    action:
+      move_to: "Organized/Code/Python"
