@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDP System Architecture Flow (16:9)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            min-height: 500px;
+        }
+        /* Container adjustment for wide viewing */
+        .wide-container {
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans">
+    <div class="max-w-[1400px] mx-auto">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-slate-800">NeuroVault AI – Intelligent Document Infrastructure</h1>
+            <p class="text-slate-600 mt-1">System Architecture Flow </p>
+        </header>
+
+        <!-- Diagram Section in 16:9 context -->
+        <div class="mermaid mb-8">
+            graph LR
+                %% Ingestion Path
+                subgraph User_Entry [Entry]
+                    UD[User Devices]
+                end
+
+                subgraph Ingestion_Layer [1. Ingestion]
+                    C[Camera]
+                    U[Upload]
+                    W[Watchdog]
+                end
+
+                subgraph Processing_Engine [2. Intelligence]
+                    OCR[OCR Engine]
+                    DIE[Doc Intelligence]
+                    Class[Classification]
+                    EE[Extraction]
+                end
+
+                subgraph Storage_Layer [3. Storage]
+                    EG[Embedding Gen]
+                    VDB[(Vector DB)]
+                    MDB[(Metadata DB)]
+                end
+
+                subgraph Insights_Layer [4. Reasoning]
+                    RL[AI Reasoning]
+                    UI[Query UI]
+                end
+
+                %% Connections
+                UD --> C & U & W
+                C & U & W --> OCR
+                OCR --> DIE
+                DIE --> Class & EE
+                
+                Class & EE --> EG
+                EG --> VDB
+                EE --> MDB
+
+                UI <--> RL
+                RL -- Search --> VDB
+                RL -- learnings --> MDB
+                RL -- Context --> MDB
+
+                %% Styling
+                style User_Entry fill:#f1f5f9,stroke:#64748b
+                style Ingestion_Layer fill:#eff6ff,stroke:#3b82f6
+                style Processing_Engine fill:#f0fdf4,stroke:#22c55e
+                style Storage_Layer fill:#fff7ed,stroke:#f97316
+                style Insights_Layer fill:#faf5ff,stroke:#a855f7
+        </div>
+
+        <!-- Details Grid - Now in 3 columns for wide view -->
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-blue-600 mb-2 flex items-center text-sm uppercase tracking-wide">
+                    <span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mr-2 text-xs">1</span>
+                    Ingestion
+                </h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Multimodal entry via mobile cameras, API uploads, or automated folder watchdogs. Raw assets are immediately queued for OCR.
+                </p>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-green-600 mb-2 flex items-center text-sm uppercase tracking-wide">
+                    <span class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mr-2 text-xs">2</span>
+                    Processing
+                </h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    OCR converts pixels to text. Intelligence engines classify document types and extract structured entities like dates and totals.
+                </p>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-purple-600 mb-2 flex items-center text-sm uppercase tracking-wide">
+                    <span class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center mr-2 text-xs">3</span>
+                    Reasoning
+                </h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    A RAG-based AI layer synthesizes vector embeddings with relational metadata to provide natural language answers.
+                </p>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-slate-400 text-xs">
+            Landscape Architecture Flow v1.1 • Optimized for Widescreen Presentation
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'base',
+            fontSize: 50, /* Increased font size */
+            flowchart: { 
+                useMaxWidth: true, 
+                htmlLabels: true, 
+                curve: 'basis',
+                padding: 20
+            },
+            themeVariables: {
+                primaryColor: '#ffffff',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#cbd5e1',
+                lineColor: '#64748b',
+                secondaryColor: '#f8fafc',
+                tertiaryColor: '#f8fafc',
+                fontSize: '18px' /* Specifically setting the label font size */
+            }
+        });
+    </script>
+</body>
+</html>

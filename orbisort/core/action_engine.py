@@ -70,7 +70,7 @@ class OrbisortEngine:
             ),
         )
 
-    def determine_target_folder(self, extension: str) -> str:
+    def determine_target_folder(self, extension: str, filepath: str) -> str:
         extension = extension.strip().lower().lstrip(".")
         ext_key = f".{extension}" if extension else ""
 
@@ -90,6 +90,17 @@ class OrbisortEngine:
         if not os.path.isabs(target):
             target = os.path.join(self.base_dir, target)
 
+        try:
+            timestamp = os.path.getctime(filepath)
+        except Exception:
+            timestamp = os.path.getmtime(filepath)
+
+        dt = datetime.fromtimestamp(timestamp)
+        year = str(dt.year)
+        month = f"{dt.month:02d}"
+        day = f"{dt.day:02d}"
+
+        target = os.path.join(target, year, month, day)
         return os.path.normpath(target)
 
     def process_file(self, filepath: str) -> Optional[str]:
@@ -106,7 +117,7 @@ class OrbisortEngine:
             _, ext = os.path.splitext(filepath)
             extension = ext.lstrip(".").lower()
 
-            target_folder = self.determine_target_folder(extension)
+            target_folder = self.determine_target_folder(extension, filepath)
             os.makedirs(target_folder, exist_ok=True)
 
             filename = os.path.basename(filepath)

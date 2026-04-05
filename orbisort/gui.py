@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, scrolledtext, ttk
+from tkinter import filedialog, scrolledtext
 import threading
 import os
 from core.watcher import OrbisortWatcher
@@ -10,156 +10,233 @@ class OrbisortGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Orbisort")
-        self.root.geometry("900x600")
-        self.root.configure(bg="#121212")
+        self.root.geometry("1000x650")
+        self.root.configure(bg="#0f172a")
 
         self.logger = get_logger()
         self.watcher = None
-        self.watching = False
+        self.search_var = tk.StringVar()
+        self.full_log_content = ""  # Store complete log for filtering
 
-        # Colors
-        self.bg = "#121212"
-        self.card = "#1e1e1e"
-        self.accent = "#4cc2ff"
+        # Colors (React-like dark theme)
+        self.bg = "#0f172a"
+        self.sidebar = "#020617"
+        self.card = "#111827"
+        self.accent = "#38bdf8"
         self.green = "#22c55e"
         self.red = "#ef4444"
-        self.text = "#ffffff"
-        self.subtext = "#a1a1aa"
+        self.text = "#e5e7eb"
+        self.muted = "#9ca3af"
 
-        style = ttk.Style()
-        style.theme_use("default")
+        # LAYOUT
+        self.main_frame = tk.Frame(root, bg=self.bg)
+        self.main_frame.pack(fill="both", expand=True)
 
-        # MAIN CONTAINER
-        self.container = tk.Frame(root, bg=self.bg)
-        self.container.pack(fill="both", expand=True, padx=20, pady=20)
+        self.build_sidebar()
+        self.build_content()
 
-        # HEADER
-        header = tk.Frame(self.container, bg=self.bg)
-        header.pack(fill="x", pady=(0, 15))
+    # ---------------- SIDEBAR ----------------
+    def build_sidebar(self):
+        self.sidebar_frame = tk.Frame(self.main_frame, bg=self.sidebar, width=200)
+        self.sidebar_frame.pack(side="left", fill="y")
 
         tk.Label(
-            header,
-            text="📁 Orbisort",
+            self.sidebar_frame,
+            text="Orbisort",
+            bg=self.sidebar,
+            fg=self.accent,
+            font=("Segoe UI", 16, "bold"),
+        ).pack(pady=20)
+
+        self.create_sidebar_btn("Dashboard")
+        self.create_sidebar_btn("Logs")
+        self.create_sidebar_btn("Settings")
+
+    def create_sidebar_btn(self, text):
+        tk.Button(
+            self.sidebar_frame,
+            text=text,
+            bg=self.sidebar,
             fg=self.text,
-            bg=self.bg,
-            font=("Segoe UI", 20, "bold"),
-        ).pack(anchor="w")
+            relief="flat",
+            anchor="w",
+            padx=20,
+            pady=10,
+        ).pack(fill="x")
 
-        tk.Label(
-            header,
-            text="Smart File Automation",
-            fg=self.subtext,
-            bg=self.bg,
-            font=("Segoe UI", 10),
-        ).pack(anchor="w")
+    # ---------------- CONTENT ----------------
+    def build_content(self):
+        self.content = tk.Frame(self.main_frame, bg=self.bg)
+        self.content.pack(fill="both", expand=True)
 
-        # STATUS BAR
-        self.status_frame = tk.Frame(self.container, bg=self.card)
-        self.status_frame.pack(fill="x", pady=10)
+        self.build_topbar()
+        self.build_dashboard()
 
-        self.status_label = tk.Label(
-            self.status_frame,
-            text="● STOPPED",
+    # ---------------- TOPBAR ----------------
+    def build_topbar(self):
+        topbar = tk.Frame(self.content, bg=self.bg)
+        topbar.pack(fill="x", pady=10, padx=20)
+
+        self.status = tk.Label(
+            topbar,
+            text="● Stopped",
             fg=self.red,
-            bg=self.card,
+            bg=self.bg,
             font=("Segoe UI", 10, "bold"),
         )
-        self.status_label.pack(padx=10, pady=8, anchor="w")
+        self.status.pack(side="left")
 
-        # FOLDER CARD
-        folder_card = tk.Frame(self.container, bg=self.card)
+        # Search bar
+        search_frame = tk.Frame(topbar, bg=self.bg)
+        search_frame.pack(side="left", padx=20)
+
+        tk.Label(search_frame, text="🔍", bg=self.bg, fg=self.muted).pack(side="left")
+        self.search_entry = tk.Entry(
+            search_frame,
+            textvariable=self.search_var,
+            bg="#1f2933",
+            fg="#9ca3af",
+            relief="flat",
+            font=("Segoe UI", 9),
+            width=25,
+        )
+        self.search_entry.pack(side="left", ipady=4, padx=(5, 0))
+        self.search_entry.insert(0, "Search logs...")
+        self.search_entry.bind("<FocusIn>", self.on_search_focus_in)
+        self.search_entry.bind("<FocusOut>", self.on_search_focus_out)
+        self.search_var.trace("w", self.filter_logs)
+        tk.Button(
+            topbar,
+            text="Start",
+            bg=self.green,
+            fg="white",
+            relief="flat",
+            command=self.start_watching,
+        ).pack(side="right", padx=5)
+
+        tk.Button(
+            topbar,
+            text="Stop",
+            bg=self.red,
+            fg="white",
+            relief="flat",
+            command=self.stop_watching,
+        ).pack(side="right")
+
+    # ---------------- DASHBOARD ----------------
+    def build_dashboard(self):
+        dash = tk.Frame(self.content, bg=self.bg)
+        dash.pack(fill="both", expand=True, padx=20)
+
+        # Stats cards
+        stats_frame = tk.Frame(dash, bg=self.bg)
+        stats_frame.pack(fill="x", pady=(0, 20))
+
+        self.build_stat_card(
+            stats_frame, "Files Organized", get_file_count(), "#38bdf8"
+        )
+        self.build_stat_card(stats_frame, "Active Rules", 5, "#22c55e")  # Placeholder
+        self.build_stat_card(stats_frame, "Watch Folders", 1, "#f59e0b")
+
+        # Folder card
+        folder_card = self.card_frame(dash)
         folder_card.pack(fill="x", pady=10)
 
         tk.Label(
             folder_card,
             text="Watch Folder",
-            fg=self.text,
             bg=self.card,
+            fg=self.text,
             font=("Segoe UI", 11, "bold"),
-        ).pack(anchor="w", padx=10, pady=(10, 5))
+        ).pack(anchor="w", padx=10, pady=5)
 
-        inner = tk.Frame(folder_card, bg=self.card)
-        inner.pack(fill="x", padx=10, pady=(0, 10))
+        row = tk.Frame(folder_card, bg=self.card)
+        row.pack(fill="x", padx=10, pady=10)
 
-        self.folder_entry = tk.Entry(
-            inner,
-            bg="#2a2a2a",
-            fg="white",
-            insertbackground="white",
-            relief="flat",
-        )
-        self.folder_entry.pack(
-            side="left", fill="x", expand=True, padx=(0, 10), ipady=6
-        )
+        self.folder_entry = tk.Entry(row, bg="#1f2933", fg="white", relief="flat")
+        self.folder_entry.pack(side="left", fill="x", expand=True, ipady=6)
 
         tk.Button(
-            inner,
+            row,
             text="Browse",
             bg=self.accent,
             fg="black",
             relief="flat",
             command=self.select_folder,
-        ).pack(side="right")
+        ).pack(side="right", padx=10)
 
-        # CONTROL BUTTONS
-        control = tk.Frame(self.container, bg=self.bg)
-        control.pack(pady=10)
-
-        self.start_btn = tk.Button(
-            control,
-            text="Start",
-            bg=self.green,
-            fg="white",
-            relief="flat",
-            width=12,
-            command=self.start_watching,
-            state="disabled",
-        )
-        self.start_btn.pack(side="left", padx=10, ipady=6)
-
-        self.stop_btn = tk.Button(
-            control,
-            text="Stop",
-            bg=self.red,
-            fg="white",
-            relief="flat",
-            width=12,
-            command=self.stop_watching,
-            state="disabled",
-        )
-        self.stop_btn.pack(side="left", padx=10, ipady=6)
-
-        # LOG CARD
-        log_card = tk.Frame(self.container, bg=self.card)
+        # Logs card
+        log_card = self.card_frame(dash)
         log_card.pack(fill="both", expand=True, pady=10)
 
         tk.Label(
             log_card,
-            text="Activity",
-            fg=self.text,
+            text="Activity Logs",
             bg=self.card,
+            fg=self.text,
             font=("Segoe UI", 11, "bold"),
         ).pack(anchor="w", padx=10, pady=10)
 
         self.log_text = scrolledtext.ScrolledText(
             log_card,
-            bg="#111111",
-            fg="#d4d4d4",
-            insertbackground="white",
+            bg="#020617",
+            fg="#d1d5db",
             relief="flat",
         )
         self.log_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
         self.setup_logging()
 
-    # -------------------------
+    # ---------------- HELPERS ----------------
+    def card_frame(self, parent):
+        return tk.Frame(parent, bg=self.card, bd=0)
 
+    def build_stat_card(self, parent, title, value, color):
+        card = tk.Frame(parent, bg=self.card, relief="flat", bd=1)
+        card.pack(side="left", fill="x", expand=True, padx=5)
+
+        tk.Label(
+            card, text=title, bg=self.card, fg=self.muted, font=("Segoe UI", 9)
+        ).pack(pady=(10, 5))
+        tk.Label(
+            card, text=str(value), bg=self.card, fg=color, font=("Segoe UI", 18, "bold")
+        ).pack(pady=(0, 10))
+
+    def on_search_focus_in(self, event):
+        if self.search_entry.get() == "Search logs...":
+            self.search_entry.delete(0, tk.END)
+            self.search_entry.config(fg="white")
+
+    def on_search_focus_out(self, event):
+        if not self.search_entry.get():
+            self.search_entry.insert(0, "Search logs...")
+            self.search_entry.config(fg="#9ca3af")
+            self.filter_logs()
+
+    def filter_logs(self, *args):
+        search_term = self.search_var.get().strip().lower()
+        if not search_term or search_term == "search logs...":
+            self.log_text.delete(1.0, tk.END)
+            self.log_text.insert(tk.END, self.full_log_content)
+            self.log_text.see(tk.END)
+            return
+
+        lines = self.full_log_content.split("\n")
+        filtered_lines = [line for line in lines if search_term in line.lower()]
+
+        self.log_text.delete(1.0, tk.END)
+        if filtered_lines:
+            self.log_text.insert(tk.END, "\n".join(filtered_lines) + "\n")
+        else:
+            self.log_text.insert(tk.END, f"No logs found containing: '{search_term}'\n")
+        self.log_text.see(tk.END)
+
+    # ---------------- LOGIC ----------------
     def select_folder(self):
         folder = filedialog.askdirectory()
         if folder:
             self.folder_entry.delete(0, tk.END)
             self.folder_entry.insert(0, folder)
-            self.start_btn.config(state="normal")
 
     def start_watching(self):
         folder = self.folder_entry.get()
@@ -168,12 +245,7 @@ class OrbisortGUI:
             self.log("Invalid folder")
             return
 
-        self.watching = True
-
-        self.status_label.config(text="● LIVE", fg=self.green)
-
-        self.start_btn.config(state="disabled")
-        self.stop_btn.config(state="normal")
+        self.status.config(text="● LIVE", fg=self.green)
 
         self.watcher = OrbisortWatcher(folder, recursive=True)
 
@@ -187,33 +259,34 @@ class OrbisortGUI:
         if self.watcher:
             self.watcher.stop()
 
-        self.status_label.config(text="● STOPPED", fg=self.red)
-
-        self.start_btn.config(state="normal")
-        self.stop_btn.config(state="disabled")
-
-        self.log("Stopped watching")
+        self.status.config(text="● STOPPED", fg=self.red)
+        self.log("Stopped")
 
     def log(self, msg):
+        self.full_log_content += msg + "\n"
         self.log_text.insert(tk.END, msg + "\n")
         self.log_text.see(tk.END)
+
+        search_term = self.search_var.get().strip().lower()
+        if search_term and search_term != "search logs...":
+            self.filter_logs()
 
     def setup_logging(self):
         import logging
 
-        class Handler(logging.Handler):
-            def __init__(self, widget):
-                super().__init__()
-                self.widget = widget
 
-            def emit(self, record):
-                msg = self.format(record)
-                self.widget.insert(tk.END, msg + "\n")
-                self.widget.see(tk.END)
+def get_file_count():
+    try:
+        import sqlite3
 
-        handler = Handler(self.log_text)
-        handler.setLevel(logging.INFO)
-        self.logger.addHandler(handler)
+        conn = sqlite3.connect("orbisort.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM files")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+    except Exception:
+        return 0
 
 
 if __name__ == "__main__":
