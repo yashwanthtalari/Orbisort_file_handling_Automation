@@ -107,3 +107,9 @@ database/chromadb/
 # Logs
 logs/*.log
 *.log
+
+# Orbisort Data
+Organized/
+test_workspace/
+scratch/
+test_folder/

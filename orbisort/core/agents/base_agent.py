@@ -12,6 +12,12 @@ class BaseAgent(ABC):
     def subscribe(self, msg_type):
         coordinator.subscribe(self.name, msg_type)
 
+    def report_status(self, is_active=True):
+        self.send("AGENT_STATUS_UPDATE", {
+            "name": self.name.replace("Agent", ""),
+            "active": is_active
+        })
+
     @abstractmethod
     def receive(self, message):
         pass

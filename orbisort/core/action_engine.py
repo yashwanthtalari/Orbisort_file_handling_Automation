@@ -95,7 +95,25 @@ class OrbisortEngine:
             target = os.path.join("Organized", "Others", "Unknown")
 
         if not os.path.isabs(target):
-            target = os.path.join(self.base_dir, target)
+            # Sort within the same folder where the file was found
+            file_dir = os.path.dirname(os.path.abspath(filepath))
+            
+            # Clean up the target string for comparison
+            rule_target = target
+            if rule_target.startswith("Organized/"):
+                rule_target = rule_target[len("Organized/"):]
+            elif rule_target.startswith("Organized\\"):
+                rule_target = rule_target[len("Organized\\"):]
+            
+            # Normalize for comparison
+            normalized_file_dir = os.path.normpath(file_dir)
+            normalized_rule_target = os.path.normpath(rule_target)
+            
+            # If the current directory already ends with the target path, we consider it organized
+            if normalized_file_dir.endswith(normalized_rule_target):
+                return normalized_file_dir
+                
+            target = os.path.join(file_dir, normalized_rule_target)
 
         # Intelligent folder depth: 
         # Only create year/month/day subfolders if the target category has > 5 files
@@ -129,19 +147,19 @@ class OrbisortEngine:
                 logger.debug("process_file called on nonexistent path: %s", filepath)
                 return None
 
-            abs_path = os.path.abspath(filepath)
-            if os.path.commonpath([abs_path, self.organized_dir]) == self.organized_dir:
-                logger.debug("Skipping already organized file: %s", abs_path)
-                return None
-
             _, ext = os.path.splitext(filepath)
             extension = ext.lstrip(".").lower()
 
             target_folder = self.determine_target_folder(extension, filepath)
-            os.makedirs(target_folder, exist_ok=True)
-
+            
             filename = os.path.basename(filepath)
             dest_path = os.path.join(target_folder, filename)
+
+            # Check if file is already at destination
+            if os.path.abspath(filepath) == os.path.abspath(dest_path):
+                return None
+
+            os.makedirs(target_folder, exist_ok=True)
 
             if os.path.exists(dest_path):
                 os.remove(dest_path)
@@ -163,7 +181,7 @@ class OrbisortEngine:
 
             self.log_to_db(filepath, new_path, metadata, file_hash, "moved")
             logger.info("File moved → %s", new_path)
-            speak(f"Organized {filename}")
+            # speak(f"Organized {filename}") # Removed: VoiceAgent will handle this
             
             # Extract content and add to vector store for semantic search
             try:

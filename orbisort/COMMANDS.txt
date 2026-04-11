@@ -1,0 +1,45 @@
+ORBISORT COMMAND GUIDE
+=======================
+
+CLI COMMANDS
+------------
+Launch the application using these flags in your terminal:
+
+- python main.py --gui          : Launch the Premium UI interface (Recommended).
+- python main.py --watch <path> : Start background automation on a specific folder.
+- python main.py --recursive    : Enable recursive watching (includes subfolders).
+
+AI ASSISTANT COMMANDS
+---------------------
+You can type these in the AI Console or speak them via the Voice Assistant:
+
+FILE ORGANIZATION:
+- "organize my files"
+- "sort this folder"
+- "clean up my workspace"
+- "arrange my data"
+
+OPENING DIRECTORIES:
+- "open organized"     : Opens the main organized hub.
+- "locate image folder" : Opens your local sorted images.
+- "show my photos"      : Shortcut to media/images.
+- "go to my code"       : Opens the sorted code directory.
+- "open documents"      : Opens the documents category.
+- "show my music"       : Opens the songs/audio folder.
+
+SEARCHING FOR FILES:
+- "find [filename]"           : e.g., "find resume.pdf"
+- "search for [query]"        : e.g., "search for invoice"
+- "where is the [item]"       : e.g., "where is the budget spreadsheet"
+- "locate [keyword] documents": Semantic search for content.
+
+SYSTEM & ACTIVITY:
+- "check system status" : Reports on the health of all agents (Watcher, Locator, etc.).
+- "how are you doing?"   : Friendly check on the assistant's status.
+- "give me a summary"   : Recaps the last 5 files organized today.
+- "what did you do?"     : Shows recent sorting history.
+
+ADVANCED DISCOVERY:
+- "run a deep scan"     : Manually triggers the discovery engine to map your folders.
+- "re-index my files"   : Updates the internal system map for better accuracy.
+- "set scan only mode"  : Instructs the system to prioritize discovery over sorting.

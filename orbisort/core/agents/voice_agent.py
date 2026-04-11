@@ -12,6 +12,7 @@ class VoiceAgent(BaseAgent):
     def __init__(self):
         super().__init__("VoiceAgent", subscriptions=["START_STT", "SPEAK", "FILE_ORGANIZED"])
         self.last_announce_time = 0
+        self.report_status(True)
 
     def receive(self, message):
         if message.msg_type == "START_STT":
@@ -24,10 +25,15 @@ class VoiceAgent(BaseAgent):
     def announce_organization(self, data):
         """Spontaneously announce file organization, but not too frequently"""
         current_time = time.time()
-        if current_time - self.last_announce_time > 10: # Max one alert every 10 seconds
+        if current_time - self.last_announce_time > 15: # Increased cooldown slightly
             filename = os.path.basename(data['original'])
-            # Don't speak path, just filename
-            speak(f"I've just organized {filename}")
+            ext = os.path.splitext(filename)[1].lower().replace(".", "")
+            
+            # Map extensions to friendly names
+            ext_map = {"pdf": "document", "py": "script", "jpg": "image", "png": "image", "mp4": "video", "docx": "word doc"}
+            name_type = ext_map.get(ext, "file")
+            
+            speak(f"Successfully sorted your {name_type}, {filename}.")
             self.last_announce_time = current_time
 
     def process_voice(self):

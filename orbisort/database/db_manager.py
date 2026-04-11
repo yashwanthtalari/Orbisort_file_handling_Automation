@@ -29,6 +29,19 @@ def initialize_db():
     )
     """
     )
+    
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS system_map (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        path TEXT UNIQUE,
+        name TEXT,
+        extensions TEXT,
+        file_count INTEGER,
+        last_scanned TEXT
+    )
+    """
+    )
 
     conn.commit()
     conn.close()

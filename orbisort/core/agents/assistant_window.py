@@ -41,19 +41,25 @@ class AssistantWindow(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
     def activate_voice(self):
+        self.set_status("Listening...")
         coordinator.publish("AssistantWindow", "START_STT", None)
 
     def set_status(self, text):
         self.status_label.configure(text=text)
         if "Listening" in text:
+            # Pulsing color for listening
             self.main_frame.configure(border_color="#f59e0b")
             self.status_label.configure(text_color="#f59e0b")
+            self.header.configure(text_color="#f59e0b", text="AI LISTENING...")
         elif "You said" in text:
             self.main_frame.configure(border_color="#22c55e")
             self.status_label.configure(text_color="#22c55e")
-        elif "Organized" in text or "Search" in text:
+            self.header.configure(text_color="#22c55e", text="PROCESSING...")
+        elif "Organized" in text or "Search" in text or "Opening" in text:
             self.main_frame.configure(border_color="#38bdf8")
             self.status_label.configure(text_color="#38bdf8")
+            self.header.configure(text_color="#38bdf8", text="ACTION COMPLETE")
         else:
-            self.main_frame.configure(border_color="#38bdf8")
+            self.main_frame.configure(border_color="#334155")
             self.status_label.configure(text_color="white")
+            self.header.configure(text_color="#64748b", text="AI ASSISTANT STANDBY")

@@ -8,6 +8,7 @@ class OrganizerAgent(BaseAgent):
     def __init__(self):
         super().__init__("OrganizerAgent", subscriptions=["FILE_DISCOVERED"])
         self.engine = OrbisortEngine()
+        self.report_status(True)
 
     def receive(self, message):
         if message.msg_type == "FILE_DISCOVERED":

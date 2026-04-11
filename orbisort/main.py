@@ -24,10 +24,19 @@ def main():
         action="store_true",
         help="Launch Modern GUI interface",
     )
+    parser.add_argument(
+        "--scan-only",
+        action="store_true",
+        help="Only index the folder structure, do not move/organize files",
+    )
     args = parser.parse_args()
 
-    # Ensure DB is ready
+    # Ensure DB and base directories are ready
     initialize_db()
+    
+    # Pre-create Organized directory
+    from core.action_engine import ORGANIZED_DIR
+    os.makedirs(ORGANIZED_DIR, exist_ok=True)
 
     if args.gui:
         from gui import OrbisortGUI
