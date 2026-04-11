@@ -1,2 +1,12 @@
 watchdog
 pyyaml
+google-genai
+python-dotenv
+chromadb
+pdfplumber
+pytesseract
+pillow
+pydantic
+SpeechRecognition
+pyttsx3
+customtkinter

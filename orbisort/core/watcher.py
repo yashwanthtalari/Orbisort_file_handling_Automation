@@ -6,10 +6,10 @@ from watchdog.events import FileSystemEventHandler
 from threading import Event
 from utils.logger import get_logger
 from core.action_engine import OrbisortEngine
+from database.db_manager import initialize_db
 
 logger = get_logger()
 MAX_WORKERS = 8
-executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 
 def _should_ignore(path: str) -> bool:
@@ -21,12 +21,13 @@ class OrbisortHandler(FileSystemEventHandler):
     def __init__(self, engine: OrbisortEngine):
         super().__init__()
         self.engine = engine
+        self.executor = None
 
     def _queue_path(self, path: str):
         if _should_ignore(path):
             return
         logger.info("Event for file: %s", path)
-        executor.submit(self.engine.process_file, path)
+        self.executor.submit(self.engine.process_file, path)
 
     def on_created(self, event):
         if event.is_directory:
@@ -44,7 +45,7 @@ class OrbisortHandler(FileSystemEventHandler):
         self._queue_path(event.src_path)
 
 
-def _scan_directory(path_to_scan: str, engine: OrbisortEngine):
+def _scan_directory(path_to_scan: str, engine: OrbisortEngine, executor: ThreadPoolExecutor):
     logger.info("Running initial scan on %s", path_to_scan)
 
     futures = []
@@ -68,12 +69,15 @@ class OrbisortWatcher:
         self.observer = Observer()
         self.stop_event = Event()
         self.engine = OrbisortEngine()
+        self.executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
     def start(self):
+        initialize_db()
         os.makedirs(self.path_to_watch, exist_ok=True)
-        _scan_directory(self.path_to_watch, self.engine)
+        _scan_directory(self.path_to_watch, self.engine, self.executor)
 
         handler = OrbisortHandler(self.engine)
+        handler.executor = self.executor
         self.observer.schedule(handler, self.path_to_watch, recursive=self.recursive)
         self.observer.start()
 
@@ -94,7 +98,7 @@ class OrbisortWatcher:
             self.observer.stop()
             self.observer.join(timeout=5)
 
-        executor.shutdown(wait=True)
+        self.executor.shutdown(wait=True)
         logger.info("Watcher stopped")
 
 

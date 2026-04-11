@@ -2,7 +2,11 @@ import os
 import yaml
 from typing import Any, Dict, List, Optional
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
+if hasattr(sys, '_MEIPASS'):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULE_FILE = os.path.join(BASE_DIR, "config", "rules.yaml")
 
 

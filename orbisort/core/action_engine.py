@@ -8,10 +8,17 @@ from utils.file_utils import move_file, get_file_metadata
 from utils.logger import get_logger
 from database.db_manager import DB_PATH
 from core.rule_engine import load_rules, match_rule
+from core.document_parser import extract_text
+from database.vector_store import vector_store
+from core.assistant.voice import speak
 
 logger = get_logger()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORGANIZED_DIR = os.path.join(BASE_DIR, "Organized")
 
 
@@ -90,17 +97,30 @@ class OrbisortEngine:
         if not os.path.isabs(target):
             target = os.path.join(self.base_dir, target)
 
-        try:
-            timestamp = os.path.getctime(filepath)
-        except Exception:
-            timestamp = os.path.getmtime(filepath)
+        # Intelligent folder depth: 
+        # Only create year/month/day subfolders if the target category has > 5 files
+        # This keeps simple collections clean while scaling for large ones.
+        os.makedirs(target, exist_ok=True)
+        existing_files = [f for f in os.listdir(target) if os.path.isfile(os.path.join(target, f))]
+        
+        if len(existing_files) > 5:
+            try:
+                timestamp = os.path.getctime(filepath)
+            except Exception:
+                timestamp = os.path.getmtime(filepath)
 
-        dt = datetime.fromtimestamp(timestamp)
-        year = str(dt.year)
-        month = f"{dt.month:02d}"
-        day = f"{dt.day:02d}"
+            dt = datetime.fromtimestamp(timestamp)
+            year = str(dt.year)
+            month = f"{dt.month:02d}"
+            target = os.path.join(target, year, month)
+            
+            # Sub-divide by day only if month has > 20 files
+            os.makedirs(target, exist_ok=True)
+            month_files = [f for f in os.listdir(target) if os.path.isfile(os.path.join(target, f))]
+            if len(month_files) > 20:
+                day = f"{dt.day:02d}"
+                target = os.path.join(target, day)
 
-        target = os.path.join(target, year, month, day)
         return os.path.normpath(target)
 
     def process_file(self, filepath: str) -> Optional[str]:
@@ -143,6 +163,16 @@ class OrbisortEngine:
 
             self.log_to_db(filepath, new_path, metadata, file_hash, "moved")
             logger.info("File moved → %s", new_path)
+            speak(f"Organized {filename}")
+            
+            # Extract content and add to vector store for semantic search
+            try:
+                extracted_text = extract_text(new_path)
+                if extracted_text:
+                    vector_store.add_document(new_path, extracted_text, {"file_name": filename, "extension": extension})
+                    logger.info(f"Indexed content for semantic search: {new_path}")
+            except Exception as e:
+                logger.error(f"Failed to index {new_path}: {e}")
 
             return new_path
 
